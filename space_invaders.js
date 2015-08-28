@@ -36,12 +36,42 @@ var view = {
   },
 
   spawnEnemies: function() {
-    for (var i = 60; i < 160; i += 20) {
-      for (var j = 1; j <= 11; j++) {
-        $('#' + (i + j)).addClass('enemy');
-      }
+    for (var i = 0; i < controller.currentEnemies.length ; i ++ ) {
+      $( '#' + controller.currentEnemies[i] ).addClass('enemy');
     }
   },
+
+  spawnBullet: function() {
+    $('#370').addClass("bullet");
+  },
+
+  updateEnemyViews: function(){
+    $('.enemy').removeClass('enemy');
+    for(var i = 0; i<controller.currentEnemies.length; i++){
+      $('#'+controller.currentEnemies[i]).addClass('enemy');
+    }
+  },
+
+  moveEnemiesNumberOfSpaces: function(numberOfSpaces){
+    for (var i = 0; i < controller.currentEnemies.length ; i ++ ) {
+      controller.currentEnemies[i] += numberOfSpaces;
+    }
+  },
+
+  moveEnemyPositions: function(){
+    if (controller.enemyCounter % 11 === 0 ){
+      view.moveEnemiesNumberOfSpaces(20);
+      controller.enemyCounter = 1;
+      controller.enemyDirection *= -1;
+    }
+    else{
+      view.moveEnemiesNumberOfSpaces( controller.enemyDirection );
+
+    }
+    controller.enemyCounter ++;
+  },
+
+
 
   updatePlayerPosition: function() {
     console.log("updating! current player position is " + controller.currentPlayerPosition);
@@ -64,6 +94,13 @@ var view = {
     view.updatePlayerPosition();
   },
 
+  moveBullet: function(){
+    controller.playerBulletPosition -= 20;
+    $('.bullet').removeClass('bullet');
+    $('#'+controller.playerBulletPosition ).addClass('bullet');
+
+  },
+
   keyListener: function() {
     $(document).keydown(function(e) {
       switch(e.which) {
@@ -80,6 +117,7 @@ var view = {
 
           //space
           case 32:
+            controller.playerShoot();
             console.log("FIRE");
             break;
 
@@ -91,13 +129,77 @@ var view = {
 
   }
 
-}
+};
+
 
 var controller = {
 
   init: function() {
     view.init();
+    this.createCurrentEnemiesArray();
+    this.playGame();
   },
 
-  currentPlayerPosition: 0
-}
+  currentPlayerPosition: 390,
+  enemyIntervalTime: 1000,
+  currentEnemies: [],
+  enemyCounter: 1,
+  enemyDirection: 1,
+  playerBulletPosition: 390,
+  playerBulletIntervalTime: 100,
+  playerBullets: [],
+
+  playGame: function() {
+    controller.enenemyInterval = setInterval(function(){
+      
+      view.moveEnemyPositions();
+      view.updateEnemyViews();
+      // console.log(controller.currentEnemies);
+      console.log("count: "+controller.enemyCounter);
+
+    }, controller.enemyIntervalTime);
+
+  },
+
+  createCurrentEnemiesArray: function() {
+    for (var i = 39; i <= 160; i += 20) {
+      for (var j = 1; j <= 11; j++){
+        this.currentEnemies.push(i+j);
+      }
+    }
+  },
+
+  playerShoot: function(){
+    
+    this.playerBullets.push( currentPlayerPosition );
+    
+    view.spawnBullet();
+
+    controller.playerBulletInterval = setInterval(function(){
+      
+      view.moveBullet();
+
+      var hitEnemyIndex = controller.currentEnemies.indexOf(controller.playerBulletPosition);
+      if( hitEnemyIndex > -1 ){
+        console.log("HIT");
+        clearInterval(controller.playerBulletInterval);
+        controller.currentEnemies.splice(hitEnemyIndex, 1);
+        $('.bullet').removeClass('bullet');
+        controller.playerBulletPosition = 390;
+      }
+    }, controller.playerBulletIntervalTime);
+
+  }
+
+};
+
+
+
+
+
+
+
+
+
+
+
