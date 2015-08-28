@@ -1,0 +1,27 @@
+*, *:after, *:before {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.game-grid {
+  width: 600px;
+  height: 500px;
+  margin: 0 auto;
+}
+
+.cell {
+  /*border: 1px solid black;*/
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+}
+
+.player {
+  background-color: green;
+}
+
+.enemy {
+  background-color: red;
+  border: 1px solid black;
+}
