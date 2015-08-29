@@ -21,12 +21,13 @@ var view = {
     this.generateGrid();
     this.spawnPlayer();
     this.spawnEnemies();
+    this.spawnEnemyShooters();
     this.keyListener();
   },
 
   generateGrid: function() {
     for (var i = 1; i <= (this.gridSize[0] * this.gridSize[1]); i++) {
-      $('.game-grid').append("<div class='cell' id='" + i + "'>"+ i + "</div>")
+      $('.game-grid').append("<div class='cell' id='" + i + "'>"+ i + "</div>");
     }
   },
 
@@ -37,12 +38,15 @@ var view = {
 
   spawnEnemies: function() {
     for (var i = 0; i < controller.currentEnemies.length ; i ++ ) {
+      
       $( '#' + controller.currentEnemies[i] ).addClass('enemy');
-      console.log("I IS " + i);
-      if (i > 55) {
-        console.log("YES");
-        $('#'+ controller.currentEnemies[i] ).addClass('shooter');
-      }
+
+    }
+  },
+
+  spawnEnemyShooters: function(){
+    for(var i = 0; i < controller.enemyShooters.length; i++ ){
+      $( '#' + controller.enemyShooters[i] ).addClass('shooter');
     }
   },
 
@@ -57,20 +61,36 @@ var view = {
     }
   },
 
+  updateShooterViews: function(){
+    $('.shooter').removeClass('shooter');
+    for(var i = 0; i<controller.enemyShooters.length; i++){
+      $('#'+controller.enemyShooters[i]).addClass('shooter');
+    }
+
+  },
+
   moveEnemiesNumberOfSpaces: function(numberOfSpaces){
     for (var i = 0; i < controller.currentEnemies.length ; i ++ ) {
       controller.currentEnemies[i] += numberOfSpaces;
     }
   },
 
+  moveShooterEnemiesNumberOfSpaces: function(numberOfSpaces){
+    for(var i = 0; i< controller.enemyShooters.length ; i++ ){
+      controller.enemyShooters[i] += numberOfSpaces;
+    }
+  },
+
   moveEnemyPositions: function(){
     if (controller.enemyCounter % 11 === 0 ){
       view.moveEnemiesNumberOfSpaces(20);
+      view.moveShooterEnemiesNumberOfSpaces(20);
       controller.enemyCounter = 1;
       controller.enemyDirection *= -1;
     }
     else{
       view.moveEnemiesNumberOfSpaces( controller.enemyDirection );
+      view.moveShooterEnemiesNumberOfSpaces( controller.enemyDirection);
 
     }
     controller.enemyCounter ++;
@@ -79,7 +99,7 @@ var view = {
 
 
   updatePlayerPosition: function() {
-    console.log("updating! current player position is " + controller.currentPlayerPosition);
+    // console.log("updating! current player position is " + controller.currentPlayerPosition);
     $('.player').removeClass('player');
     $('#' + controller.currentPlayerPosition).addClass('player');
 
@@ -103,12 +123,15 @@ var view = {
 
     $('#' + i).removeClass('bullet');
     $('#' + (i - 20)).addClass('bullet');
+
     return i - 20;
 
-    // controller.playerBulletPosition -= 20;
-    // $('.bullet').removeClass('bullet');
-    // $('#'+controller.playerBulletPosition ).addClass('bullet');
+  },
 
+  moveEnemyBullet: function(i){
+    $('#' + i).removeClass('bullet');
+    $('#' + (i + 20)).addClass('bullet');
+    return i + 20;
   },
 
   keyListener: function() {
@@ -150,9 +173,9 @@ var view = {
 var controller = {
 
   init: function() {
-    // this.createCurrentEnemiesArray();
-    view.init();
     this.createCurrentEnemiesArray();
+    view.init();
+    // this.createCurrentEnemiesArray();
     this.playGame();
   },
 
@@ -161,7 +184,8 @@ var controller = {
   currentEnemies: [],
   enemyCounter: 1,
   enemyDirection: 1,
-  eleigibleEnemyShooters: [],
+  enemyShooters: [],
+  enemyBullets: [],
   playerBulletPosition: 390,
   playerBulletIntervalTime: 100,
   playerBullets: [],
@@ -172,39 +196,83 @@ var controller = {
 
       view.moveEnemyPositions();
       view.updateEnemyViews();
-      controller.updateEnemyShooters();
-      // console.log(controller.currentEnemies);
+      view.updateShooterViews();
 
     }, controller.enemyIntervalTime);
 
+    controller.createEnemyBullets = setInterval(function(){
+
+      var shooter = controller.enemyShooters[Math.floor(Math.random() * controller.enemyShooters.length)];
+
+      controller.enemyBullets.push(shooter);
+
+      console.log("bulet created!");
+    }, 5000);
+
+    controller.enemyBulletInterval = setInterval(function(){
+
+      numOfBullets = controller.enemyBullets.length;
+
+      for(var i = 0; i<=numOfBullets; i++ ){
+        bullet = controller.enemyBullets[i];
+  
+        if(controller.playerBulletCollision(bullet)){
+          $('#'+bullet).removeClass('bullet');
+          $('player').removeClass('player');
+          controller.enemyBullets.splice(controller.enemyBullets.indexOf(bullet), 1);
+          alert("you lose");
+        }
+        else{
+          bullet = view.moveEnemyBullet(bullet);
+          controller.enemyBullets[i] = bullet;
+          
+        }
+      }
+    }, 700);
+   
+
     controller.playerBulletInterval = setInterval(function(){
-      new_bullets = []
-      len = controller.playerBullets.length
+
+      new_bullets = [];
+      len = controller.playerBullets.length;
       for (var i = 0; i < len; i++) {
         bullet = controller.playerBullets.pop();
-        bullet = view.moveBullet(bullet);
-        if (controller.currentEnemies.indexOf(bullet) > -1) {
-          controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
+        
+        
+        if(controller.enemyBulletCollision(bullet)){
+          if (controller.enemyShooters.indexOf(bullet) > -1) {
+            controller.enemyShooters.splice(controller.enemyShooters.indexOf(bullet), 1);
+            if($('#'+(bullet-20)).hasClass('enemy')){
+              controller.enemyShooters.push(bullet-20);
+            }
+         }
+          
           $('#' + bullet).removeClass('bullet');
+          
+          console.log("bullet_id: "+bullet);
+          
+          controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
+          
+          controller.playerBullets.splice(controller.playerBullets.indexOf(bullet), 1);
+
         }
         else {
+          bullet = view.moveBullet(bullet);
           new_bullets.push(bullet);
         }
-        // new_bullets.push(view.moveBullet(controller.playerBullets.pop()))
-      };
+      }
       controller.playerBullets = new_bullets;
-    }, controller.playerBulletIntervalTime)
-
-  },
-
-  updateEnemyShooters: function(){
+    }, controller.playerBulletIntervalTime);
 
   },
 
   createCurrentEnemiesArray: function() {
-    for (var i = 39; i <= 160; i += 20) {
+    for (var i = 40; i <= 160; i += 20) {
       for (var j = 1; j <= 11; j++){
         this.currentEnemies.push(i+j);
+        if( i > 160-12 ){
+          this.enemyShooters.push(i+j);
+        }
       }
     }
   },
@@ -213,25 +281,36 @@ var controller = {
 
     this.playerBullets.push( controller.currentPlayerPosition );
 
+  },
+
+  enemyShoot: function(){
+
+    var shooter = this.enemyShooters[Math.floor(Math.random() * this.enemyShooters.length)];
+    // console.log(shooter);
+
+
+  },
+
+  playerBulletCollision: function(bullet_id){
+    if( this.currentPlayerPosition === bullet_id ){
+      return true;
+    }
+    else{
+      return false;
+    }
+  },
+
+  enemyBulletCollision: function(bullet_id){
+    if( controller.currentEnemies.indexOf(bullet_id) > -1){
+      console.log("enemy hit");
+      return true;
+
+    }
+    else{
+      return false;
+    }
   }
 
-  //   view.spawnBullet();
-
-  //   controller.playerBulletInterval = setInterval(function(){
-
-  //     view.moveBullet();
-
-  //     var hitEnemyIndex = controller.currentEnemies.indexOf(controller.playerBulletPosition);
-  //     if( hitEnemyIndex > -1 ){
-  //       console.log("HIT");
-  //       clearInterval(controller.playerBulletInterval);
-  //       controller.currentEnemies.splice(hitEnemyIndex, 1);
-  //       $('.bullet').removeClass('bullet');
-  //       controller.playerBulletPosition = 390;
-  //     }
-  //   }, controller.playerBulletIntervalTime);
-
-  // }
 
 };
 
