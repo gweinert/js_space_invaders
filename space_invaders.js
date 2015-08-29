@@ -27,7 +27,7 @@ var view = {
 
   generateGrid: function() {
     for (var i = 1; i <= (this.gridSize[0] * this.gridSize[1]); i++) {
-      $('.game-grid').append("<div class='cell' id='" + i + "'>"+ i + "</div>");
+      $('.game-grid').append("<div class='cell' id='" + i + "'></div>");
     }
   },
 
@@ -82,10 +82,10 @@ var view = {
   },
 
   moveEnemyPositions: function(){
-    if (controller.enemyCounter % 11 === 0 ){
+    if (controller.enemyCounter % 10 === 0 ){
       view.moveEnemiesNumberOfSpaces(20);
       view.moveShooterEnemiesNumberOfSpaces(20);
-      controller.enemyCounter = 1;
+      controller.enemyCounter = 0;
       controller.enemyDirection *= -1;
     }
     else{
@@ -177,6 +177,7 @@ var controller = {
     view.init();
     // this.createCurrentEnemiesArray();
     this.playGame();
+    // controller.enemyIntervalTimout();
   },
 
   currentPlayerPosition: 390,
@@ -192,79 +193,178 @@ var controller = {
   playerBulletDelay: new Date().getTime(),
 
   playGame: function() {
-    controller.enemyInterval = setInterval(function(){
 
-      view.moveEnemyPositions();
-      view.updateEnemyViews();
-      view.updateShooterViews();
+    //expiremental
+    //////////////
+    ////////////
+    // controller.gameLoop = setInterval(function(){
+    controller.enemyIntervalTimout();
+    controller.createEnemyBulletsTimeout();
+    controller.enemyBulletInterval();
+    controller.playerBulletIntervalTimeout();
+  },
 
-    }, controller.enemyIntervalTime);
+  enemyIntervalTimout: function(){
 
-    controller.createEnemyBullets = setInterval(function(){
-
-      var shooter = controller.enemyShooters[Math.floor(Math.random() * controller.enemyShooters.length)];
-
-      controller.enemyBullets.push(shooter);
-
-      console.log("bulet created!");
-    }, 5000);
-
-    controller.enemyBulletInterval = setInterval(function(){
-
-      numOfBullets = controller.enemyBullets.length;
-
-      for(var i = 0; i<=numOfBullets; i++ ){
-        bullet = controller.enemyBullets[i];
-  
-        if(controller.playerBulletCollision(bullet)){
-          $('#'+bullet).removeClass('bullet');
-          $('player').removeClass('player');
-          controller.enemyBullets.splice(controller.enemyBullets.indexOf(bullet), 1);
-          alert("you lose");
-        }
-        else{
-          bullet = view.moveEnemyBullet(bullet);
-          controller.enemyBullets[i] = bullet;
-          
-        }
-      }
-    }, 700);
-   
-
-    controller.playerBulletInterval = setInterval(function(){
-
-      new_bullets = [];
-      len = controller.playerBullets.length;
-      for (var i = 0; i < len; i++) {
-        bullet = controller.playerBullets.pop();
-        
-        
-        if(controller.enemyBulletCollision(bullet)){
-          if (controller.enemyShooters.indexOf(bullet) > -1) {
-            controller.enemyShooters.splice(controller.enemyShooters.indexOf(bullet), 1);
-            if($('#'+(bullet-20)).hasClass('enemy')){
-              controller.enemyShooters.push(bullet-20);
-            }
-         }
-          
-          $('#' + bullet).removeClass('bullet');
-          
-          console.log("bullet_id: "+bullet);
-          
-          controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
-          
-          controller.playerBullets.splice(controller.playerBullets.indexOf(bullet), 1);
-
-        }
-        else {
-          bullet = view.moveBullet(bullet);
-          new_bullets.push(bullet);
-        }
-      }
-      controller.playerBullets = new_bullets;
-    }, controller.playerBulletIntervalTime);
+        view.moveEnemyPositions();
+        view.updateEnemyViews();
+        view.updateShooterViews();
+        setTimeout(controller.enemyIntervalTimout, 1000);
 
   },
+
+  createEnemyBulletsTimeout: function(){
+
+        var shooter = controller.enemyShooters[Math.floor(Math.random() * controller.enemyShooters.length)];
+        controller.enemyBullets.push(shooter);
+        console.log("bulet created!");
+        setTimeout(controller.createEnemyBulletsTimeout, 1000);
+
+  },
+
+  enemyBulletInterval: function(){
+
+        numOfBullets = controller.enemyBullets.length;
+
+        for(var i = 0; i<=numOfBullets; i++ ){
+          bullet = controller.enemyBullets[i];
+    
+          if(controller.playerBulletCollision(bullet)){
+            $('#'+bullet).removeClass('bullet');
+            $('player').removeClass('player');
+            controller.enemyBullets.splice(controller.enemyBullets.indexOf(bullet), 1);
+            alert("you lose");
+          }
+          else{
+            bullet = view.moveEnemyBullet(bullet);
+            controller.enemyBullets[i] = bullet;
+            
+          }
+        }
+
+        setTimeout(controller.enemyBulletInterval, 700);
+
+  },
+
+  playerBulletIntervalTimeout: function(){
+        new_bullets = [];
+        len = controller.playerBullets.length;
+        for (var i = 0; i < len; i++) {
+          bullet = controller.playerBullets.pop();
+          
+          
+          if(controller.enemyBulletCollision(bullet)){
+  
+            if (controller.enemyShooters.indexOf(bullet) > -1) {
+              controller.enemyShooters.splice(controller.enemyShooters.indexOf(bullet), 1);
+              if($('#'+(bullet-20)).hasClass('enemy')){
+                controller.enemyShooters.push(bullet-20);
+              }
+            }
+            
+            $('#' + bullet).removeClass('bullet');
+            
+            console.log("bullet_id: "+bullet);
+            
+            controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
+            
+            controller.playerBullets.splice(controller.playerBullets.indexOf(bullet), 1);
+
+          }
+          else if( controller.enemyBullets.indexOf(bullet) > -1){
+            $('#'+bullet).removeClass('bullet');
+            controller.playerBullets.splice(controller.playerBullets.indexOf(bullet), 1);
+            controller.enemyBullets.splice(controller.enemyBullets.indexOf(bullet), 1);
+          }
+          else {
+            bullet = view.moveBullet(bullet);
+            new_bullets.push(bullet);
+          }
+        }
+        controller.playerBullets = new_bullets;
+      // }, controller.playerBulletIntervalTime);
+        setTimeout( controller.playerBulletIntervalTimeout, 100);
+
+    },
+
+    ////////////////
+    //expiremtnal
+    
+
+
+    // controller.enemyInterval = setInterval(function(){
+
+    //   view.moveEnemyPositions();
+    //   view.updateEnemyViews();
+    //   view.updateShooterViews();
+
+    // }, controller.enemyIntervalTime);
+
+    // controller.createEnemyBullets = setInterval(function(){
+
+    //   var shooter = controller.enemyShooters[Math.floor(Math.random() * controller.enemyShooters.length)];
+
+    //   controller.enemyBullets.push(shooter);
+
+    //   console.log("bulet created!");
+    // }, 5000);
+
+    // controller.enemyBulletInterval = setInterval(function(){
+
+    //   numOfBullets = controller.enemyBullets.length;
+
+    //   for(var i = 0; i<=numOfBullets; i++ ){
+    //     bullet = controller.enemyBullets[i];
+  
+    //     if(controller.playerBulletCollision(bullet)){
+    //       $('#'+bullet).removeClass('bullet');
+    //       $('player').removeClass('player');
+    //       controller.enemyBullets.splice(controller.enemyBullets.indexOf(bullet), 1);
+    //       alert("you lose");
+    //     }
+    //     else{
+    //       bullet = view.moveEnemyBullet(bullet);
+    //       controller.enemyBullets[i] = bullet;
+          
+    //     }
+    //   }
+    // }, 700);
+   
+
+    // controller.playerBulletInterval = setInterval(function(){
+
+    //   new_bullets = [];
+    //   len = controller.playerBullets.length;
+    //   for (var i = 0; i < len; i++) {
+    //     bullet = controller.playerBullets.pop();
+        
+        
+    //     if(controller.enemyBulletCollision(bullet)){
+    //       if (controller.enemyShooters.indexOf(bullet) > -1) {
+    //         controller.enemyShooters.splice(controller.enemyShooters.indexOf(bullet), 1);
+    //         if($('#'+(bullet-20)).hasClass('enemy')){
+    //           controller.enemyShooters.push(bullet-20);
+    //         }
+    //      }
+          
+    //       $('#' + bullet).removeClass('bullet');
+          
+    //       console.log("bullet_id: "+bullet);
+          
+    //       controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
+          
+    //       controller.playerBullets.splice(controller.playerBullets.indexOf(bullet), 1);
+
+    //     }
+    //     else {
+    //       bullet = view.moveBullet(bullet);
+    //       new_bullets.push(bullet);
+    //     }
+    //   }
+    //   controller.playerBullets = new_bullets;
+    // }, controller.playerBulletIntervalTime);
+
+  // },
 
   createCurrentEnemiesArray: function() {
     for (var i = 40; i <= 160; i += 20) {
@@ -287,8 +387,6 @@ var controller = {
 
     var shooter = this.enemyShooters[Math.floor(Math.random() * this.enemyShooters.length)];
     // console.log(shooter);
-
-
   },
 
   playerBulletCollision: function(bullet_id){

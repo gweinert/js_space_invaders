@@ -5,9 +5,10 @@
 }
 
 .game-grid {
-  width: 600px;
-  height: 500px;
+  width: 605px;
+  height: 800px;
   margin: 0 auto;
+  border: solid 1px black;
 }
 
 .cell {
