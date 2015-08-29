@@ -38,6 +38,11 @@ var view = {
   spawnEnemies: function() {
     for (var i = 0; i < controller.currentEnemies.length ; i ++ ) {
       $( '#' + controller.currentEnemies[i] ).addClass('enemy');
+      console.log("I IS " + i);
+      if (i > 55) {
+        console.log("YES");
+        $('#'+ controller.currentEnemies[i] ).addClass('shooter');
+      }
     }
   },
 
@@ -94,10 +99,15 @@ var view = {
     view.updatePlayerPosition();
   },
 
-  moveBullet: function(){
-    controller.playerBulletPosition -= 20;
-    $('.bullet').removeClass('bullet');
-    $('#'+controller.playerBulletPosition ).addClass('bullet');
+  moveBullet: function(i){
+
+    $('#' + i).removeClass('bullet');
+    $('#' + (i - 20)).addClass('bullet');
+    return i - 20;
+
+    // controller.playerBulletPosition -= 20;
+    // $('.bullet').removeClass('bullet');
+    // $('#'+controller.playerBulletPosition ).addClass('bullet');
 
   },
 
@@ -117,8 +127,13 @@ var view = {
 
           //space
           case 32:
-            controller.playerShoot();
-            console.log("FIRE");
+
+            d = new Date()
+            if (d.getTime() - controller.playerBulletDelay > 750) {
+
+              controller.playerShoot();
+              controller.playerBulletDelay = d.getTime();
+            }
             break;
 
           default: return; // exit this handler for other keys
@@ -135,6 +150,7 @@ var view = {
 var controller = {
 
   init: function() {
+    // this.createCurrentEnemiesArray();
     view.init();
     this.createCurrentEnemiesArray();
     this.playGame();
@@ -145,19 +161,43 @@ var controller = {
   currentEnemies: [],
   enemyCounter: 1,
   enemyDirection: 1,
+  eleigibleEnemyShooters: [],
   playerBulletPosition: 390,
   playerBulletIntervalTime: 100,
   playerBullets: [],
+  playerBulletDelay: new Date().getTime(),
 
   playGame: function() {
-    controller.enenemyInterval = setInterval(function(){
-      
+    controller.enemyInterval = setInterval(function(){
+
       view.moveEnemyPositions();
       view.updateEnemyViews();
+      controller.updateEnemyShooters();
       // console.log(controller.currentEnemies);
-      console.log("count: "+controller.enemyCounter);
 
     }, controller.enemyIntervalTime);
+
+    controller.playerBulletInterval = setInterval(function(){
+      new_bullets = []
+      len = controller.playerBullets.length
+      for (var i = 0; i < len; i++) {
+        bullet = controller.playerBullets.pop();
+        bullet = view.moveBullet(bullet);
+        if (controller.currentEnemies.indexOf(bullet) > -1) {
+          controller.currentEnemies.splice(controller.currentEnemies.indexOf(bullet), 1);
+          $('#' + bullet).removeClass('bullet');
+        }
+        else {
+          new_bullets.push(bullet);
+        }
+        // new_bullets.push(view.moveBullet(controller.playerBullets.pop()))
+      };
+      controller.playerBullets = new_bullets;
+    }, controller.playerBulletIntervalTime)
+
+  },
+
+  updateEnemyShooters: function(){
 
   },
 
@@ -170,26 +210,28 @@ var controller = {
   },
 
   playerShoot: function(){
-    
-    this.playerBullets.push( currentPlayerPosition );
-    
-    view.spawnBullet();
 
-    controller.playerBulletInterval = setInterval(function(){
-      
-      view.moveBullet();
-
-      var hitEnemyIndex = controller.currentEnemies.indexOf(controller.playerBulletPosition);
-      if( hitEnemyIndex > -1 ){
-        console.log("HIT");
-        clearInterval(controller.playerBulletInterval);
-        controller.currentEnemies.splice(hitEnemyIndex, 1);
-        $('.bullet').removeClass('bullet');
-        controller.playerBulletPosition = 390;
-      }
-    }, controller.playerBulletIntervalTime);
+    this.playerBullets.push( controller.currentPlayerPosition );
 
   }
+
+  //   view.spawnBullet();
+
+  //   controller.playerBulletInterval = setInterval(function(){
+
+  //     view.moveBullet();
+
+  //     var hitEnemyIndex = controller.currentEnemies.indexOf(controller.playerBulletPosition);
+  //     if( hitEnemyIndex > -1 ){
+  //       console.log("HIT");
+  //       clearInterval(controller.playerBulletInterval);
+  //       controller.currentEnemies.splice(hitEnemyIndex, 1);
+  //       $('.bullet').removeClass('bullet');
+  //       controller.playerBulletPosition = 390;
+  //     }
+  //   }, controller.playerBulletIntervalTime);
+
+  // }
 
 };
 
